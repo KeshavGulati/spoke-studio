@@ -1,0 +1,38 @@
+{
+  "default": {
+    "id": "default",
+    "name": "081_SPKMVLFLP",
+    "images": "/home/keshav/dphamil_project/latest_tracking/081_SPKMVLFLP/png",
+    "masks": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/spoke_masks",
+    "created": "2026-11-11T18:32:36.357380+00:00",
+    "updated": "2026-11-11T19:07:56.218558+00:00",
+    "deleted": true
+  },
+  "5340e864482b43b7ae98d1929b9a21dd": {
+    "id": "5340e864482b43b7ae98d1929b9a21dd",
+    "name": "Imported sequence W1597971520",
+    "images": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/imported_images/5340e864482b43b7ae98d1929b9a21dd",
+    "masks": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/spoke_masks_imports/aead248a1b94bbe089b401292e1249bfb99bb5c26ed4b649de41826c67991080",
+    "created": "2026-11-11T18:32:36.445718+00:00",
+    "updated": "2026-11-11T19:07:53.116828+00:00",
+    "deleted": true
+  },
+  "f6660247c6d34d99b4da29cff791007a": {
+    "id": "f6660247c6d34d99b4da29cff791007a",
+    "name": "more masks",
+    "images": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/imported_images/d09d8bb7579d4d6cba6324cbb29d8955",
+    "masks": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/spoke_projects/f6660247c6d34d99b4da29cff791007a/masks",
+    "created": "2026-10-13T19:22:24.470579+00:00",
+    "updated": "2026-10-18T21:39:16.729073+00:00",
+    "r2_prefix": "more masks"
+  },
+  "d8c2a2f6d859400e8954c587684de1d9": {
+    "id": "d8c2a2f6d859400e8954c587684de1d9",
+    "name": "temp-project",
+    "images": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/spoke_projects/d8c2a2f6d859400e8954c587684de1d9/images",
+    "masks": "/home/keshav/dphamil_project/latest_tracking/spoke_studio/spoke_projects/d8c2a2f6d859400e8954c587684de1d9/masks",
+    "created": "2026-11-11T18:43:47.760229+00:00",
+    "updated": "2026-11-11T18:43:47.760276+00:00",
+    "r2_prefix": "temp-project"
+  }
+}
