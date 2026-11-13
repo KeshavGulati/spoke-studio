@@ -4,7 +4,7 @@ Live at: **https://spoke-studio.keshavgulati785.workers.dev**
 
 ## Introduction
 
-Spoke Studio is a tool I created for better marking up of images into binary masks for my project at the University of Maryland, College Park. The tool is highly vibe-coded using Kimi K3.1, because its main purpose is to only serve as a tool and not a final research product. The model I used was Kimi K3.1, and most of the README (except this part) was also written using this agent.
+Spoke Studio is a tool I created for better marking up of images into binary masks for my project at the University of Maryland, College Park. The tool is highly vibe-coded, because its main purpose is to only serve as a tool and not a final research product. The model I used was Kimi K3.1, and most of the README (except this section) was also written using this agent.
 
 The motivation for this tool comes from the limitations and bottlenecks of [Label Studio](https://labelstud.io/), and from the features and bottlenecks of [DS9](https://sites.google.com/cfa.harvard.edu/saoimageds9?pli=1&authuser=0). Label Studio is very useful for labelling data, including binary segmentation masks which are the main labels for this project. However, it lacks in its capability for image viewing, and there are not many transformations that are available to make labelling easier. On the other hand, DS9 offers a wide set of such transformations which make viewing spokes much easier, and hence makes it easier to mark them and create a better dataset. However, the labelling capability of DS9 is limited as it is mainly a viewing tool, and so the only way mark up images is as strict polygons.
 
