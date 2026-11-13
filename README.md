@@ -1,10 +1,32 @@
 # Spoke Studio
 
-Spoke Studio is a shared workspace for creating and editing binary masks. It is heavily vibe-coded as its main purpose is to only serve as a tool, and not a final research product. Open the app in a modern browser:
+Live at: **https://spoke-studio.keshavgulati785.workers.dev**
 
-**https://spoke-studio.keshavgulati785.workers.dev**
+## Introduction
 
-No installation is needed, and your work is saved online.
+Spoke Studio is a tool I created for better marking up of images into binary masks for my project at the University of Maryland, College Park. The tool is highly vibe-coded using Kimi K3.1, because its main purpose is to only serve as a tool and not a final research product. The model I used was Kimi K3.1, and most of the README (except this part) was also written using this agent.
+
+The motivation for this tool comes from the limitations and bottlenecks of [Label Studio](https://labelstud.io/), and from the features and bottlenecks of [DS9](https://sites.google.com/cfa.harvard.edu/saoimageds9?pli=1&authuser=0). Label Studio is very useful for labelling data, including binary segmentation masks which are the main labels for this project. However, it lacks in its capability for image viewing, and there are not many transformations that are available to make labelling easier. On the other hand, DS9 offers a wide set of such transformations which make viewing spokes much easier, and hence makes it easier to mark them and create a better dataset. However, the labelling capability of DS9 is limited as it is mainly a viewing tool, and so the only way mark up images is as strict polygons.
+
+This tool aims to provide the power of label studio for marking images, and the power of DS9 for viewing images, and is geared to be easy to setup.
+
+The rest of this README is written by Kimi.
+
+## Table of contents
+
+- [Get started](#get-started)
+- [Work with projects](#work-with-projects)
+- [Add images and masks](#add-images-and-masks)
+- [Create and edit masks](#create-and-edit-masks)
+  - [Keyboard shortcuts](#keyboard-shortcuts)
+- [Collaborate on masks](#collaborate-on-masks)
+- [Image Display](#image-display)
+  - [Brightness and contrast](#brightness-and-contrast)
+  - [Scale](#scale)
+  - [Automatic levels](#automatic-levels)
+  - [Resetting the display](#resetting-the-display)
+- [Deleted projects](#deleted-projects)
+- [Deployment and maintenance](#deployment-and-maintenance)
 
 ## Get started
 
@@ -79,11 +101,47 @@ Each image has **one shared project mask**. When someone saves, their version re
 
 The viewer shows who uploaded the current image and who most recently edited its mask. Existing older media may not have contributor information.
 
-## Display and navigation
+## Image Display
 
-Brightness, contrast, gamma, and black/white levels change only the display. They do not alter the uploaded image or mask. Settings and viewing position are carried between frames where possible.
+These controls change only what you see. They do **not** alter uploaded images, saved masks, or mask exports. Settings and viewing position are carried between frames where possible, so comparisons between frames use the same choices until you change them.
 
-The **Scale** menu provides linear, logarithmic, power, square-root, squared, asinh, sinh, and histogram-equalized displays either for faint or high-contrast features. **Min / max** sets the display limits to the current frame's intensity range. **ZScale** chooses robust limits for the current frame; fine-tune the result with the black/white sliders or switch back to linear scaling. **Reset display** restores the default display settings.
+### Brightness and contrast
+
+| Control | What it does |
+| --- | --- |
+| **Brightness** | Adds or removes brightness across the image. Increase it to make the scene brighter or decrease it to make it darker. Very bright or dark values are clipped to the displayable range. |
+| **Contrast** | Adjusts separation between darker and brighter pixels around the middle of the intensity range. Values above 1 increase contrast; values below 1 reduce it and move the image closer to gray. The default is 1. |
+| **Gamma** | Changes the balance between shadows and highlights more subtly than black/white clipping. Decrease gamma to darken midtones or increase it to brighten them. Black and white endpoints remain fixed. The default is 1. |
+| **Black level** | Sets the intensity displayed as black. Pixels at or below this value appear black; values above it are spread over the remaining display range. Raising black level can hide background noise, but it also removes faint detail below the threshold. |
+| **White level** | Sets the intensity displayed as white. Pixels at or above this value appear white. Lowering white level brightens faint features, while increasing it can preserve detail in bright features. Values beyond the selected level are clipped to white. |
+
+Black and white levels are the lower and upper limits for all scale modes. Together with brightness, contrast, and gamma, they let you tune the display without changing the scientific source data.
+
+### Scale
+
+The **Scale** menu controls how intensities between the black and white levels are distributed on screen. It does not change the actual ranges or erase mask pixels.
+
+| Mode | When to use it |
+| --- | --- |
+| **Linear** | Maps intensity evenly from black to white. This is the default and is useful when you want a direct, predictable display. |
+| **Log** | Gives more display space to faint intensities. Useful for revealing weak background structure, although background noise may become more visible too. |
+| **Power** | Gives less display space to faint and middle intensities, emphasizing the brighter end of the range. Useful when bright features need to stand out against the background. |
+| **Square root** | Brightens faint and middle intensities while retaining the original endpoints. It offers a gentler alternative to logarithmic scaling. |
+| **Squared** | Darkens faint and middle intensities relative to bright ones. Useful for suppressing a faint background or concentrating on strong spokes. |
+| **Asinh** | Combines approximately linear behavior near black with compressed highlights. It is useful for showing faint detail and bright detail together. |
+| **Sinh** | Redistributes intensity toward smaller display values, emphasizing the brighter part of the range more strongly than linear scaling. |
+| **Histogram equalization** | Redistributes intensities according to how frequently they occur in the current frame. This can improve contrast in a narrow or crowded intensity range, but it can also emphasize background differences and noise. |
+
+### Automatic levels
+
+- **Min / max:** Sets black level to the current frame’s minimum intensity and white level to its maximum intensity. It is a quick way to use the full display range without estimating the limits yourself.
+- **ZScale:** Examines the current frame and chooses display limits that balance the background with brighter features. It is a useful starting point for astronomical images; you can fine-tune the result with the black and white sliders.
+
+Automatic-level buttons change the black and white levels, not the selected scale mode. Choose **Linear** if you want a straightforward display after applying them.
+
+### Resetting the display
+
+**Reset display** restores linear scaling, zero brightness adjustment, contrast and gamma of 1, a black level of 0, and a white level of 255.
 
 The previous/next-frame overlay can help compare adjacent images. It uses raw pixel coordinates; images are not automatically aligned.
 

@@ -1,5 +1,4 @@
-import { Buffer } from 'node:buffer';
-import { PNG } from 'pngjs';
+import UPNG from 'upng-js';
 import { readJSON } from './state.js';
 
 const PREFIX = 'recently_deleted/';
@@ -66,12 +65,17 @@ async function bodyBytes(request) {
 }
 
 function png(bytes) {
-  try { return PNG.sync.read(Buffer.from(bytes)); }
-  catch { throw new RequestError('Only valid PNG images are supported'); }
+  try { return UPNG.decode(bytes); }
+  catch (error) {
+    console.error('PNG validation failed', error.message);
+    throw new RequestError('Only valid PNG images are supported');
+  }
 }
 
 function blackMask(width, height) {
-  return PNG.sync.write(new PNG({ width, height }), { colorType: 0 });
+  const pixels = new Uint8Array(width * height * 4);
+  for (let i = 3; i < pixels.length; i += 4) pixels[i] = 255;
+  return UPNG.encode([pixels.buffer], width, height, 0);
 }
 
 function binaryMask(bytes, frame) {
@@ -79,13 +83,13 @@ function binaryMask(bytes, frame) {
   if (source.width !== frame.width || source.height !== frame.height) {
     throw new RequestError('Mask dimensions do not match source');
   }
-  const mask = new PNG({ width: source.width, height: source.height });
+  const mask = new Uint8Array(source.width * source.height * 4);
   for (let i = 0; i < source.data.length; i += 4) {
     const value = source.data[i + 3] && (source.data[i] || source.data[i + 1] || source.data[i + 2]) ? 255 : 0;
-    mask.data[i] = mask.data[i + 1] = mask.data[i + 2] = value;
-    mask.data[i + 3] = 255;
+    mask[i] = mask[i + 1] = mask[i + 2] = value;
+    mask[i + 3] = 255;
   }
-  return PNG.sync.write(mask, { colorType: 0 });
+  return UPNG.encode([mask.buffer], source.width, source.height, 0);
 }
 
 function projectName(value) {

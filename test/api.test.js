@@ -131,9 +131,15 @@ test('R2 collaboration lifecycle', async () => {
     body: PNG.sync.write(mask), cookie: bobCookie }));
   assert.equal(result.data.attribution.user_id, bob.id);
   const stored = PNG.sync.read(bucket.objects.get('Shared project/masks/a.png').bytes);
-  assert.equal(stored.depth, 8);
+  assert.equal(stored.depth, 2); // Compact, lossless binary palette PNG.
   assert.equal(Math.max(...stored.data), 255);
   assert.equal(Math.min(...stored.data), 0);
+  for (let i = 0; i < stored.data.length; i += 4) {
+    assert.equal(stored.data[i], stored.data[i + 1]);
+    assert.equal(stored.data[i], stored.data[i + 2]);
+    assert.ok(stored.data[i] === 0 || stored.data[i] === 255);
+    assert.equal(stored.data[i + 3], 255);
+  }
   const details = (await (await request(env, `/api/projects/${created.id}`, { cookie: bobCookie })).json());
   assert.equal(details.count, 2);
   assert.equal(details.annotated, 1);
