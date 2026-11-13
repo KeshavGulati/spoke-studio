@@ -83,6 +83,8 @@ The viewer shows who uploaded the current image and who most recently edited its
 
 Brightness, contrast, gamma, and black/white levels change only the display. They do not alter the uploaded image or mask. Settings and viewing position are carried between frames where possible.
 
+The **Scale** menu provides linear, logarithmic, power, square-root, squared, asinh, sinh, and histogram-equalized displays either for faint or high-contrast features. **Min / max** sets the display limits to the current frame's intensity range. **ZScale** chooses robust limits for the current frame; fine-tune the result with the black/white sliders or switch back to linear scaling. **Reset display** restores the default display settings.
+
 The previous/next-frame overlay can help compare adjacent images. It uses raw pixel coordinates; images are not automatically aligned.
 
 Images are optimized for faster loading, which may slightly change displayed pixel values. Original uploaded images remain unchanged. Mask exports are not affected by these display optimizations.
