@@ -99,7 +99,7 @@ Masks save automatically after brush strokes, polygon fills, undo/redo, and befo
 
 Each image has **one shared project mask**. When someone saves, their version replaces the previous project version, and their username becomes its latest editor. Avoid editing the same mask at the same time as someone else; separate manual review is recommended if you need independent results.
 
-The viewer shows who uploaded the current image and who most recently edited its mask. Existing older media may not have contributor information.
+The viewer shows who uploaded the current image. When the mask overlay is visible, a badge at the upper-left of the image shows who last saved that mask. Hover over the badge to see the person's full user ID and save time. The badge changes to indicate unsaved edits before they are saved. Existing older media may not have contributor information.
 
 ## Image Display
 
