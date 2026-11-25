@@ -35,7 +35,7 @@ The rest of this README is written by Kimi.
 3. Enter the shared workspace password provided by the workspace administrator.
 4. Select **Create account**.
 
-Your username and unique user ID identify your image uploads and mask edits. To use an existing account, choose **Log in** and enter its email address and the workspace password. Your login normally lasts for 30 days, including across app updates. Changing the workspace password signs out all existing sessions.
+Your username and unique user ID identify your image uploads and mask edits. To use an existing account, choose **Log in** and enter its email address and the workspace password. Select **Stay logged in for 30 days** to keep your session across browser restarts. Without this option, the session cookie is removed when you close the browser and expires server-side after 24 hours. Changing the workspace password signs out all existing sessions.
 
 The workspace password is shared by all collaborators and is required for both login and signup. Email addresses are not verified, so use your real email address for accurate attribution.
 

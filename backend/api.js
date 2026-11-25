@@ -3,6 +3,7 @@ import { readJSON } from "./state.js";
 
 const PREFIX = "recently_deleted/";
 const SESSION_DAYS = 30;
+const BROWSER_SESSION_SECONDS = 86400;
 const MAX_BYTES = 50_000_000;
 
 class RequestError extends Error {
@@ -57,7 +58,8 @@ function token(request) {
 }
 
 function cookie(value, maxAge = SESSION_DAYS * 86400) {
-  return `spoke_session=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+  const persistence = maxAge === null ? "" : `; Max-Age=${maxAge}`;
+  return `spoke_session=${value}; Path=/; HttpOnly; Secure; SameSite=Lax${persistence}`;
 }
 
 async function currentUser(request, env) {
@@ -77,17 +79,18 @@ async function currentUser(request, env) {
   return users[session.user_id] || null;
 }
 
-async function issueSession(user, env) {
+async function issueSession(user, env, remember = false) {
   const value = crypto.randomUUID() + crypto.randomUUID();
+  const lifetime = remember ? SESSION_DAYS * 86400 : BROWSER_SESSION_SECONDS;
   await env.BUCKET.put(
     `_system/sessions/${await hash(value)}.json`,
     JSON.stringify({
       user_id: user.id,
-      expires: new Date(Date.now() + SESSION_DAYS * 86400000).toISOString(),
+      expires: new Date(Date.now() + lifetime * 1000).toISOString(),
       access_hash: await accessPasswordHash(env),
     }),
   );
-  return cookie(value);
+  return cookie(value, remember ? SESSION_DAYS * 86400 : null);
 }
 
 async function coordinate(env, input) {
@@ -556,7 +559,11 @@ export async function handleRequest(request, env, ctx) {
             })(),
           });
         return response({ user: publicUser(user) }, 200, {
-          "Set-Cookie": await issueSession(user, env),
+          "Set-Cookie": await issueSession(
+            user,
+            env,
+            body.remember === true || body.remember === "true",
+          ),
         });
       }
       const user = await currentUser(request, env);

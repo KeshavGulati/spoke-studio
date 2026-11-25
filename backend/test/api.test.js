@@ -148,12 +148,25 @@ test("R2 collaboration lifecycle", async () => {
       email: "Alice@Example.com",
       username: "Alice",
       password: "test-access-password",
+      remember: true,
     }),
   });
   assert.equal(response.status, 200);
   const alice = (await response.json()).user;
   const aliceCookie = response.headers.get("Set-Cookie");
   assert.match(aliceCookie, /HttpOnly; Secure; SameSite=Lax/);
+  assert.match(aliceCookie, /Max-Age=2592000/);
+  response = await request(env, "/api/login", {
+    method: "POST",
+    body: JSON.stringify({
+      email: "alice@example.com",
+      password: "test-access-password",
+    }),
+  });
+  assert.equal(response.status, 200);
+  const browserSessionCookie = response.headers.get("Set-Cookie");
+  assert.match(browserSessionCookie, /HttpOnly; Secure; SameSite=Lax/);
+  assert.doesNotMatch(browserSessionCookie, /Max-Age/);
   assert.equal(
     (await json(await request(env, "/api/auth", { cookie: aliceCookie }))).data
       .user.username,
@@ -177,6 +190,7 @@ test("R2 collaboration lifecycle", async () => {
       email: "bob@example.com",
       username: "Bob",
       password: "test-access-password",
+      remember: true,
     }),
   });
   const bob = (await response.json()).user;

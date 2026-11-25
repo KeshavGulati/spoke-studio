@@ -145,7 +145,7 @@ Run `--resume` only when continuing this migration after its registry had alread
 
 - `users.json` stores UUIDs, emails, usernames, and account creation times. Passwords are never stored in user records.
 - The shared `ACCESS_PASSWORD` Worker secret is checked during login and signup. Only a SHA-256 hash of the configured password is stored with each session; the submitted password is never persisted.
-- Browser sessions last 30 days. R2 stores SHA-256 hashes of session tokens, not the raw tokens. Changing the access password invalidates existing sessions.
+- Selecting **Stay logged in for 30 days** creates a persistent 30-day session cookie. Otherwise, the cookie lasts until the browser closes and the server-side session expires after 24 hours. R2 stores SHA-256 hashes of random session tokens, not raw tokens, passwords, or password hashes. Changing the access password invalidates existing sessions.
 - `projects.json` indexes shared projects, owner UUIDs, and immutable R2 prefixes.
 - `_system/projects/<project-id>/images.json` records ordered frame metadata and saved-mask status.
 - `_system/attribution/<project-id>.json` records image uploaders and the latest mask editor. A public project copy is written to `<project-name>/attribution.json`.

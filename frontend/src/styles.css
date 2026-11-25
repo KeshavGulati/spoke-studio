@@ -400,6 +400,14 @@ canvas {
   @apply min-h-5 text-[#ffad9e];
 }
 
+#authCard .remember-session {
+  @apply my-3 flex items-center gap-2 text-[#b3afa3];
+}
+
+#authCard .remember-session input {
+  @apply m-0 h-4 w-4 p-0 accent-[#67bfb2];
+}
+
 button.password-toggle {
   @apply absolute bottom-0 right-[3px] top-[7px] w-10 border-0 bg-transparent p-2 text-[#b3afa3] hover:bg-transparent hover:text-white;
 }

@@ -25,6 +25,15 @@ function PasswordField({ id }) {
   );
 }
 
+function RememberSession() {
+  return (
+    <label className="remember-session">
+      <input name="remember" type="checkbox" value="true" />
+      Stay logged in for 30 days
+    </label>
+  );
+}
+
 export default function AuthScreen() {
   return (
     <div id="authScreen">
@@ -60,6 +69,7 @@ export default function AuthScreen() {
             />
           </label>
           <PasswordField id="loginPassword" />
+          <RememberSession />
           <button type="submit" className="primary">
             Log in
           </button>
@@ -89,6 +99,7 @@ export default function AuthScreen() {
             />
           </label>
           <PasswordField id="signupPassword" />
+          <RememberSession />
           <button type="submit" className="primary">
             Create account
           </button>
