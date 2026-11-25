@@ -1,0 +1,485 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  @apply bg-[#252420] font-[system-ui] text-sm text-[#c9c6bb];
+}
+
+body {
+  @apply m-0 bg-[#252420];
+}
+
+[hidden] {
+  display: none !important;
+}
+
+header {
+  @apply box-border flex min-h-12 flex-wrap items-center gap-[18px] border-b border-[#44423b] bg-[#252420] px-5 py-0;
+}
+
+h1 {
+  @apply m-0 flex items-center gap-2 text-xl tracking-[-0.5px] text-white;
+}
+
+h2 {
+  @apply mt-6 text-xs uppercase tracking-[1px] text-[#a2c2b9];
+}
+
+small,
+footer {
+  @apply text-[#a6a296];
+}
+
+button,
+select {
+  @apply cursor-pointer rounded border border-[#4a4840] bg-[#302f2a] px-2.5 py-[7px] text-[#dedbd1];
+}
+
+button {
+  @apply hover:border-[#787569] hover:bg-[#3a3933] disabled:cursor-wait disabled:opacity-50;
+}
+
+button.active {
+  @apply border-[#52bdb0] bg-[#314c49];
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  @apply outline-2 outline-offset-[3px] outline-[#8997ff];
+}
+
+select {
+  @apply max-w-60;
+}
+
+label {
+  @apply my-3.5 block;
+}
+
+input[type="text"],
+input[type="search"],
+textarea {
+  @apply box-border rounded border border-[#4b4941] bg-[#252420] p-2.5 text-[#ece8de];
+}
+
+input[type="search"] {
+  @apply w-[220px] text-[13px];
+}
+
+input[type="range"] {
+  @apply w-full accent-[#67bfb2];
+}
+
+output {
+  @apply float-right text-[#a3ccc1];
+}
+
+section {
+  @apply flex min-w-0 flex-col;
+}
+
+main {
+  @apply grid h-[calc(100vh-48px)] grid-cols-[240px_1fr];
+}
+
+aside {
+  @apply overflow-auto border-r border-[#44423b] bg-[#282722] p-[18px];
+}
+
+footer {
+  @apply px-4 py-3;
+}
+
+kbd {
+  @apply text-[#dad6cb];
+}
+
+.brand-mark {
+  @apply box-border inline-block h-[21px] w-[21px] border-[3px] border-[#ffa48e];
+  background: conic-gradient(#ff795e 25%, transparent 0 50%, #ff795e 0 75%, transparent 0);
+}
+
+.primary {
+  @apply border-[#8190df] bg-[#5968bf] text-white hover:border-[#9eaaed] hover:bg-[#6879d2];
+}
+
+#projectsButton {
+  @apply shrink-0;
+}
+
+#projectTitle {
+  @apply flex max-w-[280px] items-center self-stretch truncate border-l border-[#44423b] pl-[18px] text-sm text-[#eeeae1];
+}
+
+#createButton,
+#status {
+  @apply ml-auto;
+}
+
+.theme-pill {
+  @apply whitespace-nowrap rounded-[20px] border border-[#45433d] px-[13px] py-[5px] text-[#eeeae1];
+}
+
+.theme-pill span {
+  @apply mr-[7px] text-[#b5bef4];
+}
+
+#status {
+  @apply text-xs text-[#a3c3b8];
+}
+
+#userBadge {
+  @apply whitespace-nowrap text-[#d9d7ce];
+}
+
+#logoutButton {
+  @apply px-2 py-[5px];
+}
+
+#dashboard {
+  @apply m-0 min-h-[230px] border-b border-[#44423b] px-10 pb-10 pt-[30px];
+}
+
+.dashboard-tools {
+  @apply mb-5 flex items-center justify-between gap-4;
+}
+
+.dashboard-tools p {
+  @apply m-0 text-[13px] text-[#a5a297];
+}
+
+#projectGrid {
+  @apply grid grid-cols-4 gap-8;
+}
+
+.project-shell {
+  @apply relative min-w-0;
+}
+
+.project-shell .card-title {
+  @apply pr-8;
+}
+
+.project-card {
+  @apply flex min-h-[164px] w-full cursor-pointer flex-col overflow-hidden rounded-lg border border-[#44423b] bg-[#252420] p-0 text-left hover:border-[#737067] hover:bg-[#2d2c27] hover:shadow-[0_3px_14px_#0002];
+}
+
+.card-head {
+  @apply box-border block w-full border-b border-[#44423b] px-4 pb-3.5 pt-4;
+}
+
+.card-title {
+  @apply mb-[11px] block truncate text-[15px] font-semibold text-[#c9c6bb];
+}
+
+.card-counts {
+  @apply flex items-center justify-between gap-3 text-[13px];
+}
+
+.card-stats {
+  @apply flex items-center gap-[15px];
+}
+
+.saved-icon {
+  @apply mr-1.5 align-middle text-[21px] leading-4 text-[#4bc3b6];
+}
+
+.pending-icon {
+  @apply mr-1.5 align-middle text-xl leading-4 text-[#ea856b];
+}
+
+.card-description {
+  @apply block px-4 py-3 text-[13px] text-[#bdb9ad];
+}
+
+.card-foot {
+  @apply mt-auto flex items-center justify-between px-4 pb-[13px] pt-1 text-[13px] text-[#a29e92];
+}
+
+.sequence-icon {
+  @apply grid h-[27px] w-[27px] place-items-center rounded-full bg-[#91b7b0] text-[15px] text-[#36534e];
+}
+
+#dashboardError {
+  @apply mb-4 mt-0 text-[#ffad9e];
+}
+
+#dashboardError:empty {
+  @apply hidden;
+}
+
+.project-menu {
+  @apply absolute right-3 top-2.5 z-[3];
+}
+
+.project-menu summary {
+  @apply grid h-7 w-7 cursor-pointer list-none place-items-center rounded text-lg font-bold text-[#8997ef] hover:bg-[#393830];
+}
+
+.project-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.project-menu[open] summary {
+  @apply bg-[#393830];
+}
+
+.project-menu-items {
+  @apply absolute right-0 top-8 min-w-[145px] rounded-[5px] border border-[#555147] bg-[#302f29] p-[5px] shadow-[0_5px_20px_#0007];
+}
+
+.project-menu-items button {
+  @apply block w-full border-0 bg-transparent px-3 py-[9px] text-left hover:bg-[#454239];
+}
+
+.project-menu-items .delete-project {
+  @apply text-[#f0a18b];
+}
+
+dialog {
+  @apply w-[calc(100vw-60px)] max-w-[440px] rounded-[10px] border border-[#575349] bg-[#292823] p-[26px] text-[#d7d2c6] shadow-[0_20px_80px_#0007];
+}
+
+dialog::backdrop {
+  @apply bg-black/60;
+}
+
+dialog h2 {
+  @apply mb-2.5 mt-0 text-[21px] normal-case tracking-normal text-[#ece8df];
+}
+
+dialog p {
+  @apply leading-normal text-[#aaa699];
+}
+
+#createProject {
+  @apply mt-6;
+}
+
+#createProject label {
+  @apply mb-2 mt-4;
+}
+
+#newProjectName {
+  @apply mt-2 w-full;
+}
+
+.dialog-actions {
+  @apply mt-6 flex justify-end gap-2.5;
+}
+
+#createError,
+#error {
+  @apply text-[#ffad9e];
+}
+
+.toolbar {
+  @apply flex flex-wrap items-center gap-2.5 p-3.5;
+}
+
+.tools {
+  @apply flex flex-wrap gap-1.5;
+}
+
+#viewport {
+  @apply relative flex-1 touch-none overflow-hidden bg-[#11120f];
+}
+
+canvas {
+  @apply absolute inset-0 h-full w-full;
+}
+
+#timeline {
+  @apply min-w-[180px] flex-1;
+}
+
+.floating-tools {
+  @apply absolute right-2.5 top-1/2 z-[2] flex -translate-y-1/2 items-start gap-[7px];
+}
+
+.tool-rail {
+  @apply flex flex-col gap-[3px] rounded-lg border border-[#45433c] bg-[#292823ef] p-[5px] shadow-[0_4px_18px_#0004];
+}
+
+.tool-rail button {
+  @apply grid h-[33px] w-[33px] place-items-center rounded border border-transparent bg-transparent p-[5px] text-[#97968e] hover:bg-[#3a3933] hover:text-[#e1dfd6];
+}
+
+.tool-rail button.active {
+  @apply border-[#7c8ac4] bg-[#4e5d99] text-[#eeeef7];
+}
+
+.tool-rail svg {
+  @apply h-6 w-6;
+}
+
+.brush-rail {
+  @apply flex flex-col items-center gap-2 rounded-[7px] bg-[#292823ef] px-[5px] py-[11px] text-[#bcb8aa] shadow-[0_4px_18px_#0004];
+}
+
+.brush-rail input[type="range"] {
+  @apply mx-0 my-[3px] h-[145px] w-5 accent-[#6579c9];
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+.brush-dot {
+  @apply block rounded-full bg-[#171712];
+}
+
+.brush-dot.large {
+  @apply h-4 w-4;
+}
+
+.brush-dot.small {
+  @apply h-[7px] w-[7px];
+}
+
+.brush-rail output {
+  @apply float-none text-[11px] text-[#aaa697];
+}
+
+#pixelReadout {
+  @apply pointer-events-none absolute bottom-3 left-3 rounded-[5px] border border-[#45433c] bg-[#292823ef] px-2.5 py-[7px] font-mono text-xs text-[#d9d5c9];
+}
+
+#maskAttribution {
+  @apply absolute left-3 top-3 z-[2] max-w-[calc(100%-100px)] truncate rounded-[5px] border border-[#52766a] bg-[#253d37ef] px-2.5 py-[7px] text-[#b9e1d4];
+}
+
+#maskAttribution[title] {
+  @apply cursor-default;
+}
+
+#frameAttribution {
+  @apply ml-[18px] text-[#b6b3a9];
+}
+
+#authScreen {
+  @apply fixed inset-0 z-[100] grid place-items-center overflow-auto bg-[#1d1c18] p-5;
+}
+
+#authCard {
+  @apply w-full max-w-[420px] rounded-xl border border-[#555147] bg-[#302f29] p-8 shadow-[0_20px_60px_#0005];
+}
+
+#authCard h1 {
+  @apply mb-3 justify-center;
+}
+
+#authCard h2 {
+  @apply mt-3 text-lg normal-case tracking-normal;
+}
+
+#authCard p {
+  @apply leading-normal text-[#b3afa3];
+}
+
+.auth-tabs {
+  @apply my-5 flex gap-2;
+}
+
+.auth-tabs button {
+  @apply flex-1;
+}
+
+#authCard input {
+  @apply mt-[7px] block box-border w-full rounded-[5px] border border-[#666158] bg-[#252420] px-3 py-2.5 font-[inherit] leading-tight text-[#ece8de];
+}
+
+#authCard input::placeholder {
+  @apply text-[#817e75];
+}
+
+#authCard .primary {
+  @apply mt-2.5 w-full;
+}
+
+#authError {
+  @apply min-h-5 text-[#ffad9e];
+}
+
+button.password-toggle {
+  @apply absolute bottom-0 right-[3px] top-[7px] w-10 border-0 bg-transparent p-2 text-[#b3afa3] hover:bg-transparent hover:text-white;
+}
+
+.password-toggle svg {
+  @apply m-auto block h-[22px] w-[22px];
+}
+
+@media (min-width: 2100px) {
+  #projectGrid {
+    @apply grid-cols-5;
+  }
+}
+
+@media (max-width: 1200px) {
+  #projectGrid {
+    @apply grid-cols-3 gap-6;
+  }
+}
+
+@media (max-width: 900px) {
+  #projectGrid {
+    @apply grid-cols-2;
+  }
+
+  #dashboard {
+    @apply p-6;
+  }
+
+  .theme-pill {
+    @apply hidden;
+  }
+}
+
+@media (max-width: 700px) {
+  main {
+    @apply grid-cols-[190px_1fr];
+  }
+}
+
+@media (max-width: 600px) {
+  #projectGrid {
+    @apply grid-cols-1 gap-4;
+  }
+
+  .dashboard-tools {
+    @apply flex-col items-start;
+  }
+
+  header {
+    @apply gap-2.5 px-3.5 py-2.5;
+  }
+
+  #dashboard {
+    @apply px-4 py-5;
+  }
+
+  h1 {
+    @apply text-lg;
+  }
+
+  #projectTitle {
+    @apply pl-2.5;
+  }
+
+  #status {
+    @apply m-0 w-full;
+  }
+
+  main {
+    @apply h-[calc(100vh-100px)];
+  }
+}
+
+@media (max-height: 550px) {
+  .tool-rail button {
+    @apply h-7 w-7;
+  }
+
+  .brush-rail input[type="range"] {
+    @apply h-[95px];
+  }
+}

@@ -32,11 +32,12 @@ The rest of this README is written by Kimi.
 
 1. Select **Sign up**.
 2. Enter your email address and choose the username you want collaborators to see.
-3. Select **Create account**.
+3. Enter the shared workspace password provided by the workspace administrator.
+4. Select **Create account**.
 
-Your username and unique user ID identify your image uploads and mask edits. To use an existing account, choose **Log in** and enter its email address. Your login normally lasts for 30 days, including across app updates.
+Your username and unique user ID identify your image uploads and mask edits. To use an existing account, choose **Log in** and enter its email address and the workspace password. Your login normally lasts for 30 days, including across app updates. Changing the workspace password signs out all existing sessions.
 
-**Use your real email address.** Accounts have no passwords and emails are not verified. Spoke Studio is intended for trusted collaborators, not for protecting sensitive information.
+The workspace password is shared by all collaborators and is required for both login and signup. Email addresses are not verified, so use your real email address for accurate attribution.
 
 ## Work with projects
 

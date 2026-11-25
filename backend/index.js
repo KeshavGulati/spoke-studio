@@ -1,6 +1,6 @@
-import { DurableObject } from 'cloudflare:workers';
-import { handleRequest, cleanup } from './api.js';
-import { coordinate } from './state.js';
+import { DurableObject } from "cloudflare:workers";
+import { handleRequest, cleanup } from "./api.js";
+import { coordinate } from "./state.js";
 
 export class MetadataCoordinator extends DurableObject {
   async fetch(request) {
@@ -10,7 +10,7 @@ export class MetadataCoordinator extends DurableObject {
         const result = await coordinate(this.env.BUCKET, input);
         return Response.json({ result });
       } catch (error) {
-        console.error('Metadata operation failed', error);
+        console.error("Metadata operation failed", error);
         return Response.json({ error: error.message }, { status: 400 });
       }
     });
