@@ -92,8 +92,17 @@ async function issueSession(user, env, remember = false) {
   );
   return cookie(value, remember ? SESSION_DAYS * 86400 : null);
 }
+async function runWithDelay() {
+  console.log("Starting...");
+  await sleep(2000); // Pauses for 2 seconds (2000 ms)
+  console.log("Done after 2 seconds!");
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function coordinate(env, input) {
+  // adding a sleep for testing
+  //sleep(10000);
   const id = env.METADATA.idFromName("shared-metadata");
   const result = await env.METADATA.get(id).fetch("https://metadata/", {
     method: "POST",
@@ -219,20 +228,19 @@ async function projectList(env) {
     }));
 }
 
-function route(path) {
-  const parts = path.slice(1).split("/");
-  if (parts.length === 2) parts.splice(1, 0, "default");
-  if (parts.length !== 3 || !["frame", "mask"].includes(parts[0])) {
-    throw new RequestError("Invalid route", 404);
-  }
-  const index = Number(parts[2]);
-  if (!Number.isInteger(index) || index < 0)
-    throw new RequestError("Invalid frame", 404);
-  return { kind: parts[0], id: parts[1], index };
+function mediaRoute(path) {
+  const match = path.match(
+    /^\/api\/projects\/([a-f0-9]+)\/frames\/(\d+)(\/mask)?$/,
+  );
+  if (!match) return null;
+  return {
+    id: match[1],
+    index: Number(match[2]),
+    kind: match[3] ? "mask" : "frame",
+  };
 }
 
-async function frameResponse(request, env, ctx) {
-  const { id, index } = route(new URL(request.url).pathname);
+async function frameResponse(request, env, ctx, { id, index }) {
   const cached =
     globalThis.caches?.default && (await caches.default.match(request));
   if (cached) return cached;
@@ -254,8 +262,7 @@ async function frameResponse(request, env, ctx) {
   return result;
 }
 
-async function maskResponse(request, env) {
-  const { id, index } = route(new URL(request.url).pathname);
+async function maskResponse(env, { id, index }) {
   const item = await project(env, id);
   const list = await frames(env, id);
   const frame = list[index];
@@ -372,87 +379,77 @@ async function moveProject(env, item) {
   return destination;
 }
 
-async function post(request, env, user) {
-  const path = new URL(request.url).pathname;
-  if (path === "/api/auth/logout") {
-    const value = token(request);
-    if (value)
-      await env.BUCKET.delete(`_system/sessions/${await hash(value)}.json`);
-    return response({ success: true }, 200, { "Set-Cookie": cookie("", 0) });
+async function deleteProject(env, id) {
+  const item = await project(env, id);
+  await coordinate(env, {
+    action: "update-project",
+    id,
+    patch: { deleted: true, r2_deleted_prefix: await moveProject(env, item) },
+  });
+  return response({ success: true });
+}
+
+async function createProject(request, env, user) {
+  const body = await request.json();
+  const item = await coordinate(env, {
+    action: "create-project",
+    id: crypto.randomUUID().replaceAll("-", ""),
+    title: projectName(body.name),
+    user,
+  });
+  return response(item);
+}
+
+async function renameProject(request, env, id) {
+  await project(env, id);
+  await coordinate(env, {
+    action: "update-project",
+    id,
+    patch: { name: projectName((await request.json()).name) },
+  });
+  return response({ success: true });
+}
+
+async function createImport(request, env, user) {
+  const target = request.headers.get("X-Project-Id");
+  if (target) {
+    const item = await project(env, target);
+    if (item.count)
+      throw new RequestError("Images can only be imported into an empty project");
   }
-  if (path === "/api/projects") {
-    const body = await request.json();
-    const item = await coordinate(env, {
-      action: "create-project",
-      id: crypto.randomUUID().replaceAll("-", ""),
-      title: projectName(body.name),
-      user,
-    });
-    return response(item);
-  }
-  if (path.startsWith("/api/projects/")) {
-    const [, , , id, action] = path.split("/");
-    const item = await project(env, id);
-    if (!["rename", "delete"].includes(action))
-      throw new RequestError("Unknown project action");
-    const patch =
-      action === "delete"
-        ? { deleted: true, r2_deleted_prefix: await moveProject(env, item) }
-        : { name: projectName((await request.json()).name) };
-    await coordinate(env, { action: "update-project", id, patch });
-    return response({ success: true });
-  }
-  if (path === "/api/import") {
-    const target = request.headers.get("X-Project-Id");
-    if (target) {
-      const item = await project(env, target);
-      if (item.count)
-        throw new RequestError(
-          "Images can only be imported into an empty project",
-        );
-    }
-    const id = crypto.randomUUID().replaceAll("-", "");
-    await coordinate(env, {
-      action: "import-init",
-      id,
-      target,
-      user_id: user.id,
-    });
-    return response({ id });
-  }
-  const importMatch = path.match(/^\/import\/([a-f0-9]+)\/(image|finish)$/);
-  if (importMatch) {
-    const [, id, action] = importMatch;
-    if (action === "finish")
-      return response(await finishImport(request, env, id, user));
-    await importMetadata(env, id, user);
-    const name = filename(
-      JSON.parse(
-        decodeURIComponent(request.headers.get("X-Image-Name") || '""'),
-      ),
-    );
-    const bytes = await bodyBytes(request);
-    if (!bytes.byteLength) throw new RequestError("Empty PNG upload");
-    const image = png(bytes);
-    const key = `_system/imports/${id}/images/${name}`;
-    if (await env.BUCKET.head(key))
-      throw new RequestError("Duplicate filename: " + name);
-    await env.BUCKET.put(key, bytes, {
-      httpMetadata: { contentType: "image/png" },
-    });
-    await coordinate(env, {
-      action: "import-image",
-      id,
-      file: {
-        name,
-        width: image.width,
-        height: image.height,
-      },
-    });
-    return response({ uploaded_by: user.id, imported: true });
-  }
-  const { kind, id, index } = route(path);
-  if (kind !== "mask") throw new RequestError("Invalid request");
+  const id = crypto.randomUUID().replaceAll("-", "");
+  await coordinate(env, {
+    action: "import-init",
+    id,
+    target,
+    user_id: user.id,
+  });
+  return response({ id });
+}
+
+async function importImage(request, env, id, user) {
+  await importMetadata(env, id, user);
+  const name = filename(
+    JSON.parse(decodeURIComponent(request.headers.get("X-Image-Name") || '""')),
+  );
+  const bytes = await bodyBytes(request);
+  if (!bytes.byteLength) throw new RequestError("Empty PNG upload");
+  const image = png(bytes);
+  const key = `_system/imports/${id}/images/${name}`;
+  if (await env.BUCKET.head(key))
+    throw new RequestError("Duplicate filename: " + name);
+  await env.BUCKET.put(key, bytes, {
+    httpMetadata: { contentType: "image/png" },
+  });
+  await coordinate(env, {
+    action: "import-image",
+    id,
+    file: { name, width: image.width, height: image.height },
+  });
+  return response({ uploaded_by: user.id, imported: true });
+}
+
+async function saveMask(request, env, { id, index }, user) {
   const item = await project(env, id);
   const frame = (await frames(env, id))[index];
   if (!frame) throw new RequestError("Invalid frame", 404);
@@ -474,29 +471,33 @@ async function post(request, env, user) {
   return response({ saved: true, attribution });
 }
 
+async function logout(request, env) {
+  const value = token(request);
+  if (value)
+    await env.BUCKET.delete(`_system/sessions/${await hash(value)}.json`);
+  return response({ success: true }, 200, { "Set-Cookie": cookie("", 0) });
+}
+
 export async function handleRequest(request, env, ctx) {
   try {
     const path = new URL(request.url).pathname;
     if (
       path === "/" ||
-      !["/api", "/frame", "/mask", "/import"].some((prefix) =>
-        path.startsWith(prefix),
-      )
+      !path.startsWith("/api")
     ) {
       return env.ASSETS.fetch(request);
     }
     if (request.method === "GET") {
-      if (path === "/api/auth") {
+      if (path === "/api/session") {
         const user = await currentUser(request, env);
         return response({ user: user ? publicUser(user) : null });
       }
       const user = await currentUser(request, env);
       if (!user) return response({ error: "Please log in" }, 401);
-      if (path === "/api/projects" || path === "/api/frames") {
-        return path === "/api/projects"
-          ? response(await projectList(env))
-          : response(await inventory(env, "default"));
-      }
+      if (path === "/api/projects") return response(await projectList(env));
+      const media = mediaRoute(path);
+      if (media?.kind === "frame") return frameResponse(request, env, ctx, media);
+      if (media?.kind === "mask") return maskResponse(env, media);
       const match = path.match(/^\/api\/projects\/([a-f0-9]+)$/);
       if (match) {
         const item = await project(env, match[1]);
@@ -511,8 +512,41 @@ export async function handleRequest(request, env, ctx) {
             null,
         });
       }
-      if (path.startsWith("/frame/")) return frameResponse(request, env, ctx);
-      if (path.startsWith("/mask/")) return maskResponse(request, env);
+      throw new RequestError("Not found", 404);
+    }
+    if (request.method === "DELETE") {
+      const origin = request.headers.get("Origin");
+      if (origin && origin !== new URL(request.url).origin)
+        return response({ error: "Forbidden origin" }, 403);
+      if (path === "/api/session") return logout(request, env);
+      const user = await currentUser(request, env);
+      if (!user) return response({ error: "Please log in" }, 401);
+      const match = path.match(/^\/api\/projects\/([a-f0-9]+)$/);
+      if (!match) throw new RequestError("Not found", 404);
+      return deleteProject(env, match[1]);
+    }
+    if (request.method === "PATCH" || request.method === "PUT") {
+      const origin = request.headers.get("Origin");
+      if (origin && origin !== new URL(request.url).origin)
+        return response({ error: "Forbidden origin" }, 403);
+      const user = await currentUser(request, env);
+      if (!user) return response({ error: "Please log in" }, 401);
+      if (request.method === "PUT") {
+        const media = mediaRoute(path);
+        if (media?.kind !== "mask") throw new RequestError("Not found", 404);
+        return saveMask(request, env, media, user);
+      }
+      const projectMatch = path.match(/^\/api\/projects\/([a-f0-9]+)$/);
+      if (projectMatch) return renameProject(request, env, projectMatch[1]);
+      const importMatch = path.match(/^\/api\/imports\/([a-f0-9]+)$/);
+      if (importMatch) {
+        const body = await request.json();
+        if (body.complete !== true)
+          throw new RequestError("Import update must set complete to true");
+        return response(
+          await finishImport(request, env, importMatch[1], user),
+        );
+      }
       throw new RequestError("Not found", 404);
     }
     if (request.method === "POST") {
@@ -521,7 +555,7 @@ export async function handleRequest(request, env, ctx) {
       if (origin && origin !== new URL(request.url).origin)
         return response({ error: "Forbidden origin" }, 403);
 
-      if (path === "/api/signup" || path === "/api/login") {
+      if (path === "/api/users" || path === "/api/session") {
         const body = await request.json();
         await verifyAccessPassword(body.password, env);
         const email =
@@ -533,7 +567,7 @@ export async function handleRequest(request, env, ctx) {
         const users = await readJSON(env.BUCKET, "users.json", {});
         let user = Object.values(users).find((item) => item.email === email);
 
-        if (path === "/api/login") {
+        if (path === "/api/session") {
           if (!user)
             throw new RequestError(
               "No account uses this email; please sign up",
@@ -568,7 +602,11 @@ export async function handleRequest(request, env, ctx) {
       }
       const user = await currentUser(request, env);
       if (!user) return response({ error: "Please log in" }, 401);
-      return post(request, env, user);
+      if (path === "/api/projects") return createProject(request, env, user);
+      if (path === "/api/imports") return createImport(request, env, user);
+      const importMatch = path.match(/^\/api\/imports\/([a-f0-9]+)\/images$/);
+      if (importMatch) return importImage(request, env, importMatch[1], user);
+      throw new RequestError("Not found", 404);
     }
     throw new RequestError("Method not allowed", 405);
   } catch (error) {

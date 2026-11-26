@@ -127,12 +127,12 @@ test("R2 collaboration lifecycle", async () => {
   const bucket = new MockR2();
   const env = environment(bucket);
   assert.equal((await request(env, "/api/projects")).status, 401);
-  let response = await request(env, "/api/signup", {
+  let response = await request(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({ email: "Alice@Example.com", username: "Alice" }),
   });
   assert.equal(response.status, 401);
-  response = await request(env, "/api/signup", {
+  response = await request(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({
       email: "Alice@Example.com",
@@ -142,7 +142,7 @@ test("R2 collaboration lifecycle", async () => {
   });
   assert.equal(response.status, 401);
   assert.deepEqual(await readJSON(bucket, "users.json", {}), {});
-  response = await request(env, "/api/signup", {
+  response = await request(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({
       email: "Alice@Example.com",
@@ -156,7 +156,7 @@ test("R2 collaboration lifecycle", async () => {
   const aliceCookie = response.headers.get("Set-Cookie");
   assert.match(aliceCookie, /HttpOnly; Secure; SameSite=Lax/);
   assert.match(aliceCookie, /Max-Age=2592000/);
-  response = await request(env, "/api/login", {
+  response = await request(env, "/api/session", {
     method: "POST",
     body: JSON.stringify({
       email: "alice@example.com",
@@ -168,14 +168,14 @@ test("R2 collaboration lifecycle", async () => {
   assert.match(browserSessionCookie, /HttpOnly; Secure; SameSite=Lax/);
   assert.doesNotMatch(browserSessionCookie, /Max-Age/);
   assert.equal(
-    (await json(await request(env, "/api/auth", { cookie: aliceCookie }))).data
+    (await json(await request(env, "/api/session", { cookie: aliceCookie }))).data
       .user.username,
     "Alice",
   );
   const users = await readJSON(bucket, "users.json", {});
   assert.equal(users[alice.id].email, "alice@example.com");
   assert.equal("password" in users[alice.id], false);
-  response = await request(env, "/api/signup", {
+  response = await request(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({
       email: "alice@example.com",
@@ -184,7 +184,7 @@ test("R2 collaboration lifecycle", async () => {
     }),
   });
   assert.equal(response.status, 400);
-  response = await request(env, "/api/signup", {
+  response = await request(env, "/api/users", {
     method: "POST",
     body: JSON.stringify({
       email: "bob@example.com",
@@ -207,7 +207,7 @@ test("R2 collaboration lifecycle", async () => {
   assert.equal(bucket.objects.has("Shared project/images/"), true);
   assert.equal(bucket.objects.has("Shared project/masks/"), true);
   const start = await (
-    await request(env, "/api/import", {
+    await request(env, "/api/imports", {
       method: "POST",
       cookie: aliceCookie,
       headers: { "X-Project-Id": created.id },
@@ -217,7 +217,7 @@ test("R2 collaboration lifecycle", async () => {
     ["b.png", image(8, 5)],
     ["a.png", image(6, 4)],
   ]) {
-    response = await request(env, `/import/${start.id}/image`, {
+    response = await request(env, `/api/imports/${start.id}/images`, {
       method: "POST",
       body: data,
       cookie: aliceCookie,
@@ -225,8 +225,9 @@ test("R2 collaboration lifecycle", async () => {
     });
     assert.equal(response.status, 200);
   }
-  response = await request(env, `/import/${start.id}/finish`, {
-    method: "POST",
+  response = await request(env, `/api/imports/${start.id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ complete: true }),
     cookie: aliceCookie,
   });
   const imported = await response.json();
@@ -236,7 +237,7 @@ test("R2 collaboration lifecycle", async () => {
     ["a.png", "b.png"],
   );
   assert.equal(bucket.objects.has(`_system/imports/${start.id}.json`), false);
-  response = await request(env, `/frame/${created.id}/0`, {
+  response = await request(env, `/api/projects/${created.id}/frames/0`, {
     cookie: aliceCookie,
   });
   assert.equal(
@@ -248,7 +249,7 @@ test("R2 collaboration lifecycle", async () => {
   const empty = PNG.sync.read(
     Buffer.from(
       await (
-        await request(env, `/mask/${created.id}/0`, { cookie: aliceCookie })
+        await request(env, `/api/projects/${created.id}/frames/0/mask`, { cookie: aliceCookie })
       ).arrayBuffer(),
     ),
   );
@@ -262,8 +263,8 @@ test("R2 collaboration lifecycle", async () => {
     mask.data[i + 3] = i < 16 ? 255 : 0;
   }
   let result = await json(
-    await request(env, `/mask/${created.id}/0`, {
-      method: "POST",
+    await request(env, `/api/projects/${created.id}/frames/0/mask`, {
+      method: "PUT",
       body: PNG.sync.write(mask),
       cookie: aliceCookie,
     }),
@@ -275,8 +276,8 @@ test("R2 collaboration lifecycle", async () => {
     JSON.stringify(result.data),
   );
   result = await json(
-    await request(env, `/mask/${created.id}/0`, {
-      method: "POST",
+    await request(env, `/api/projects/${created.id}/frames/0/mask`, {
+      method: "PUT",
       body: PNG.sync.write(mask),
       cookie: bobCookie,
     }),
@@ -309,14 +310,14 @@ test("R2 collaboration lifecycle", async () => {
   );
   assert.equal(remoteAttribution.masks["a.png"].username, "Bob");
 
-  response = await request(env, `/api/projects/${created.id}/rename`, {
-    method: "POST",
+  response = await request(env, `/api/projects/${created.id}`, {
+    method: "PATCH",
     body: JSON.stringify({ name: "Renamed project" }),
     cookie: aliceCookie,
   });
   assert.equal(response.status, 200);
-  response = await request(env, `/api/projects/${created.id}/delete`, {
-    method: "POST",
+  response = await request(env, `/api/projects/${created.id}`, {
+    method: "DELETE",
     cookie: aliceCookie,
   });
   assert.equal(response.status, 200);
@@ -355,8 +356,8 @@ test("R2 collaboration lifecycle", async () => {
     ),
     false,
   );
-  response = await request(env, "/api/auth/logout", {
-    method: "POST",
+  response = await request(env, "/api/session", {
+    method: "DELETE",
     cookie: aliceCookie,
   });
   assert.equal(response.status, 200);
@@ -369,7 +370,7 @@ test("R2 collaboration lifecycle", async () => {
     (await request(env, "/api/projects", { cookie: bobCookie })).status,
     401,
   );
-  response = await request(env, "/api/login", {
+  response = await request(env, "/api/session", {
     method: "POST",
     body: JSON.stringify({
       email: "bob@example.com",
@@ -377,7 +378,7 @@ test("R2 collaboration lifecycle", async () => {
     }),
   });
   assert.equal(response.status, 401);
-  response = await request(env, "/api/login", {
+  response = await request(env, "/api/session", {
     method: "POST",
     body: JSON.stringify({
       email: "bob@example.com",

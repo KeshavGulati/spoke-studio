@@ -1,8 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { SCALE_MODES, applyScale, autoLevels } from "../../viewer-scales.js";
 import { maskAttribution } from "../../attribution.js";
 
 export function useSpokeStudio() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const router = useRef({ navigate, location });
+  const routeHandler = useRef(() => {});
+  router.current = { navigate, location };
+
   useEffect(() => {
     "use strict";
     const $ = (id) => document.getElementById(id),
@@ -40,6 +47,17 @@ export function useSpokeStudio() {
       dashboardVisible = true,
       activeUser = null;
     const controls = ["brightness", "contrast", "gamma", "black", "white"];
+    let pendingOperations = 0;
+    function trackPromise(promise) {
+      pendingOperations++;
+      $("loadingIndicator").hidden = false;
+      return promise.finally(() => {
+        pendingOperations--;
+        if (pendingOperations === 0) $("loadingIndicator").hidden = true;
+      });
+    }
+    const browserFetch = window.fetch.bind(window);
+    const fetch = (...args) => trackPromise(browserFetch(...args));
     for (const [value, label] of SCALE_MODES) {
       const option = document.createElement("option");
       option.value = value;
@@ -75,12 +93,14 @@ export function useSpokeStudio() {
       badge.title = description.title;
     }
     function loadImage(url) {
-      return new Promise((resolve, reject) => {
-        const im = new Image();
-        im.onload = () => resolve(im);
-        im.onerror = () => reject(new Error("Could not load " + url));
-        im.src = url;
-      });
+      return trackPromise(
+        new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(new Error("Could not load " + url));
+          im.src = url;
+        }),
+      );
     }
     function snapshot() {
       undo.push(mc.getImageData(0, 0, mask.width, mask.height));
@@ -162,8 +182,9 @@ export function useSpokeStudio() {
         const blob = await new Promise((resolve) =>
           copy.toBlob(resolve, "image/png"),
         );
-        const r = await fetch("/mask/" + dataset + "/" + at, {
-          method: "POST",
+        const r = await fetch(
+          `/api/projects/${dataset}/frames/${at}/mask`,
+          { method: "PUT",
           body: blob,
         });
         if (!r.ok) throw new Error((await r.json()).error || "Save failed");
@@ -285,9 +306,9 @@ export function useSpokeStudio() {
       try {
         await save();
         const im =
-          images[n] || (await loadImage("/frame/" + dataset + "/" + n));
+          images[n] || (await loadImage(`/api/projects/${dataset}/frames/${n}`));
         images[n] = im;
-        const saved = await loadImage("/mask/" + dataset + "/" + n);
+        const saved = await loadImage(`/api/projects/${dataset}/frames/${n}/mask`);
         index = n;
         mask.width = im.width;
         mask.height = im.height;
@@ -311,7 +332,7 @@ export function useSpokeStudio() {
         const gen = generation;
         for (const j of [n - 1, n + 1])
           if (j >= 0 && j < frames.length && !images[j])
-            loadImage("/frame/" + dataset + "/" + j)
+            loadImage(`/api/projects/${dataset}/frames/${j}`)
               .then((x) => {
                 if (gen === generation) {
                   images[j] = x;
@@ -651,7 +672,7 @@ export function useSpokeStudio() {
       for (let i = 0; i < list.length; i++) {
         if (gen !== generation) return;
         if (!images[i]) {
-          const im = await loadImage("/frame/" + key + "/" + i);
+          const im = await loadImage(`/api/projects/${key}/frames/${i}`);
           if (gen !== generation) return;
           images[i] = im;
         }
@@ -684,7 +705,7 @@ export function useSpokeStudio() {
       $("importFolder").disabled = $("importFiles").disabled = true;
       try {
         await save();
-        let r = await fetch("/api/import", {
+        let r = await fetch("/api/imports", {
           method: "POST",
           headers: frames.length ? {} : { "X-Project-Id": dataset },
         });
@@ -692,7 +713,7 @@ export function useSpokeStudio() {
         const key = (await r.json()).id;
         for (let i = 0; i < selected.length; i++) {
           status("Importing " + (i + 1) + " / " + selected.length);
-          r = await fetch("/import/" + key + "/image", {
+          r = await fetch(`/api/imports/${key}/images`, {
             method: "POST",
             headers: {
               "X-Image-Name": encodeURIComponent(
@@ -703,7 +724,11 @@ export function useSpokeStudio() {
           });
           if (!r.ok) throw new Error((await r.json()).error || "Import failed");
         }
-        r = await fetch("/import/" + key + "/finish", { method: "POST" });
+        r = await fetch(`/api/imports/${key}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ complete: true }),
+        });
         if (!r.ok) throw new Error((await r.json()).error || "Import failed");
         const result = await r.json();
         projectName = result.name || projectName;
@@ -844,10 +869,10 @@ export function useSpokeStudio() {
         await save();
         for (const m of prepared) {
           status("Importing mask " + (applied + 1) + " / " + prepared.length);
-          const r = await fetch("/mask/" + dataset + "/" + m.target, {
-            method: "POST",
-            body: m.blob,
-          });
+          const r = await fetch(
+            `/api/projects/${dataset}/frames/${m.target}/mask`,
+            { method: "PUT", body: m.blob },
+          );
           if (!r.ok)
             throw new Error((await r.json()).error || "Mask import failed");
           frames[m.target].mask_attribution = (await r.json()).attribution;
@@ -856,7 +881,7 @@ export function useSpokeStudio() {
           applied++;
         }
         if (prepared.some((m) => m.target === index)) {
-          const im = await loadImage("/mask/" + dataset + "/" + index);
+          const im = await loadImage(`/api/projects/${dataset}/frames/${index}/mask`);
           mc.fillStyle = "#000";
           mc.fillRect(0, 0, mask.width, mask.height);
           mc.drawImage(im, 0, 0);
@@ -1101,10 +1126,11 @@ export function useSpokeStudio() {
         return;
       busy = true;
       try {
-        const r = await fetch("/api/projects/" + project.id + "/" + action, {
-          method: "POST",
+        const deleting = action === "delete";
+        const r = await fetch("/api/projects/" + project.id, {
+          method: deleting ? "DELETE" : "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(action === "rename" ? { name } : {}),
+          body: deleting ? undefined : JSON.stringify({ name }),
         });
         if (!r.ok)
           throw new Error((await r.json()).error || "Project update failed");
@@ -1146,6 +1172,7 @@ export function useSpokeStudio() {
     }
     async function showDashboard() {
       if (busy || stroke || pan) return;
+      router.current.navigate("/projects");
       stop();
       busy = true;
       try {
@@ -1162,6 +1189,7 @@ export function useSpokeStudio() {
     }
     async function openProject(key) {
       if (busy || stroke || pan) return;
+      router.current.navigate(`/projects/${encodeURIComponent(key)}`);
       stop();
       busy = true;
       try {
@@ -1229,8 +1257,14 @@ export function useSpokeStudio() {
       $("showSignup").classList.toggle("active", !login);
       $("authError").textContent = "";
     }
-    $("showLogin").onclick = () => showAuth(true);
-    $("showSignup").onclick = () => showAuth(false);
+    $("showLogin").onclick = () => {
+      router.current.navigate("/login");
+      showAuth(true);
+    };
+    $("showSignup").onclick = () => {
+      router.current.navigate("/signup");
+      showAuth(false);
+    };
     const passwordEye =
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>';
     const passwordEyeOff =
@@ -1254,13 +1288,17 @@ export function useSpokeStudio() {
       };
       update();
     }
-    function startAuthenticated(user) {
+    function startAuthenticated(user, redirect = true) {
       activeUser = user;
       $("authScreen").hidden = true;
       $("userBadge").hidden = false;
       $("logoutButton").hidden = false;
       $("userBadge").textContent = user.username + " · " + user.id.slice(0, 8);
-      refreshProjects().catch(fail);
+      if (redirect) {
+        router.current.navigate("/projects");
+        showScreen(true);
+        refreshProjects().catch(fail);
+      }
     }
     async function login(event, url) {
       event.preventDefault();
@@ -1284,16 +1322,16 @@ export function useSpokeStudio() {
         button.disabled = false;
       }
     }
-    $("loginForm").onsubmit = (e) => login(e, "/api/login");
-    $("signupForm").onsubmit = (e) => login(e, "/api/signup");
+    $("loginForm").onsubmit = (e) => login(e, "/api/session");
+    $("signupForm").onsubmit = (e) => login(e, "/api/users");
     $("logoutButton").onclick = async () => {
       if (busy) return;
       busy = true;
       try {
         await save();
-        const r = await fetch("/api/auth/logout", { method: "POST" });
+        const r = await fetch("/api/session", { method: "DELETE" });
         if (!r.ok) throw new Error("Could not log out");
-        location.reload();
+        router.current.navigate(0);
       } catch (error) {
         fail(error);
       } finally {
@@ -1301,18 +1339,49 @@ export function useSpokeStudio() {
       }
     };
     async function initialize() {
-      const r = await fetch("/api/auth"),
+      const r = await fetch("/api/session"),
         result = await r.json();
       if (!r.ok) throw new Error("Could not initialize login");
-      if (result.user) startAuthenticated(result.user);
-      else {
+      const path = router.current.location.pathname;
+      if (result.user) {
+        startAuthenticated(result.user, false);
+        const match = path.match(/^\/projects\/([a-f0-9]+)$/);
+        if (match) await openProject(match[1]);
+        else {
+          if (path !== "/projects")
+            router.current.navigate("/projects", { replace: true });
+          await showDashboard();
+        }
+      } else {
         $("authScreen").hidden = false;
-        $("signupEmail").focus();
+        if (!["/login", "/signup"].includes(path))
+          router.current.navigate("/login", { replace: true });
+        const login = path !== "/signup";
+        showAuth(login);
+        $(login ? "loginEmail" : "signupEmail").focus();
       }
     }
+    routeHandler.current = () => {
+      const path = router.current.location.pathname;
+      if (path === "/login" || path === "/signup") {
+        if (activeUser) {
+          router.current.navigate("/projects", { replace: true });
+          if (!dashboardVisible) showDashboard();
+        } else showAuth(path === "/login");
+        return;
+      }
+      if (!activeUser) return;
+      const match = path.match(/^\/projects\/([a-f0-9]+)$/);
+      if (match && dataset !== match[1]) openProject(match[1]);
+      else if (path === "/projects" && !dashboardVisible) showDashboard();
+    };
     setTool("brush");
     showScreen(true);
-    showAuth(false);
+    showAuth(router.current.location.pathname !== "/signup");
     initialize().catch((error) => ($("authError").textContent = error.message));
   }, []);
+
+  useEffect(() => {
+    routeHandler.current(location.pathname);
+  }, [location.pathname]);
 }

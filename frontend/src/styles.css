@@ -13,6 +13,14 @@ body {
   display: none !important;
 }
 
+.loading-indicator {
+  @apply pointer-events-none fixed bottom-5 left-1/2 z-[200] flex -translate-x-1/2 items-center gap-2.5 rounded-full border border-[#555147] bg-[#302f29f2] px-4 py-2.5 text-[#eeeae1] shadow-[0_5px_20px_#0007];
+}
+
+.loading-spinner {
+  @apply h-5 w-5 animate-spin rounded-full border-2 border-[#77736a] border-t-[#9eaaed];
+}
+
 header {
   @apply box-border flex min-h-12 flex-wrap items-center gap-[18px] border-b border-[#44423b] bg-[#252420] px-5 py-0;
 }

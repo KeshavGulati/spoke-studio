@@ -11,6 +11,7 @@ Spoke Studio runs as a **Cloudflare Worker** at [spoke-studio.keshavgulati785.wo
 - [Deploy](#deploy)
 - [Run locally](#run-locally)
 - [One-time migration from the legacy app](#one-time-migration-from-the-legacy-app)
+- [API endpoints](#api-endpoints)
 - [Storage and collaboration model](#storage-and-collaboration-model)
 - [Frames, masks, and display controls](#frames-masks-and-display-controls)
 - [Validation and logs](#validation-and-logs)
@@ -34,6 +35,7 @@ The deployed application does not read the legacy local project folders:
 | `MetadataCoordinator`       | Single Durable Object instance that serializes metadata writes. Media is uploaded directly to R2; it is not stored in the Durable Object.                             |
 | `BUCKET`                    | R2 binding for the `spoke-studio` bucket.                                                                                                                             |
 | `upng-js`                   | Worker-compatible PNG decoder/encoder. `pngjs` is used for test validation only, not by the deployed runtime.                                                         |
+| React Router | Browser routing for `/login`, `/signup`, `/projects`, and `/projects/:projectId`. Cloudflare assets use single-page-application fallback so direct links and refreshes resolve to `index.html`. |
 | Tailwind CSS | Utility-based styling compiled through `@tailwindcss/vite`; reusable component and dynamic-element styles are composed with `@apply` in `frontend/src/styles.css`. |
 | React and Vite              | React renders the browser interface. Vite compiles the JSX and modules into static assets in `frontend/dist/`; no separate frontend server is required in production. |
 
@@ -141,6 +143,26 @@ The migration:
 
 Run `--resume` only when continuing this migration after its registry had already been uploaded; do not use it to overwrite newer collaborative project metadata. Keep local backups until the live application has been verified.
 
+## API endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/api/users` | Create a user account. |
+| `GET` | `/api/session` | Read the current authenticated user. |
+| `POST` | `/api/session` | Log in and create a session. |
+| `DELETE` | `/api/session` | Log out and delete the current session. |
+| `GET` | `/api/projects` | List shared projects. |
+| `POST` | `/api/projects` | Create a project. |
+| `GET` | `/api/projects/:id` | Read a project and its frame metadata. |
+| `PATCH` | `/api/projects/:id` | Rename a project. |
+| `DELETE` | `/api/projects/:id` | Move a project to Recently Deleted. |
+| `GET` | `/api/projects/:id/frames/:index` | Read a source PNG frame. |
+| `GET` | `/api/projects/:id/frames/:index/mask` | Read a frame's binary mask. |
+| `PUT` | `/api/projects/:id/frames/:index/mask` | Create or replace a frame's mask. |
+| `POST` | `/api/imports` | Create an image-import resource. |
+| `POST` | `/api/imports/:id/images` | Add a PNG to an import. |
+| `PATCH` | `/api/imports/:id` | Complete an import with `{ "complete": true }`. |
+
 ## Storage and collaboration model
 
 - `users.json` stores UUIDs, emails, usernames, and account creation times. Passwords are never stored in user records.
@@ -152,7 +174,7 @@ Run `--resume` only when continuing this migration after its registry had alread
 - `_system/imports/` holds active import sessions; `_system/sessions/` holds login sessions.
 - Imported images are staged in R2 and finalized into `<project-name>/images/`. Mask saves directly update `<project-name>/masks/` with lossless binary 0/255 PNGs.
 
-Everyone signed in sees all projects. There is **one shared mask per image**; later saves overwrite previous versions and update the editor attribution. Old media without attribution remains unowned. Project deletion moves cloud objects into `recently_deleted/<project-name>/<deletion-id>/`; scheduled cleanup permanently removes them after 30 days.
+Everyone signed in sees all projects. There is **one shared mask per image**; later saves overwrite previous versions and update the editor attribution. Old media without attribution remains unowned. Project deletion uses `DELETE /api/projects/<project-id>` and moves cloud objects into `recently_deleted/<project-name>/<deletion-id>/`; scheduled cleanup permanently removes them after 30 days.
 
 The shared password restricts workspace access to collaborators who receive it. Email addresses identify contributions but are not verified. Because everyone uses the same password, rotate it if access needs to be revoked.
 
@@ -160,7 +182,7 @@ The shared password restricts workspace access to collaborators who receive it. 
 
 ## Frames, masks, and display controls
 
-`backend/api.js` serves original frames from R2 and creates a black mask with matching dimensions when no saved mask exists. The `env.IMAGES` integration can optionally provide lossy WebP display copies; for exact source PNG pixels use `/frame/<project-id>/<index>?original=1`. When this binding is enabled in `wrangler.jsonc`, use the `cache` binding/config and immutable cache headers to avoid repeated transformations. Cloudflare Images transformations may incur charges.
+`backend/api.js` serves original frames from R2 and creates a black mask with matching dimensions when no saved mask exists. The `env.IMAGES` integration can optionally provide lossy WebP display copies; for exact source PNG pixels use `/api/projects/<project-id>/frames/<index>?original=1`. When this binding is enabled in `wrangler.jsonc`, use the `cache` binding/config and immutable cache headers to avoid repeated transformations. Cloudflare Images transformations may incur charges.
 
 `frontend/viewer-scales.js` implements the display-only scale menu and automatic levels. It does not change stored images or masks. Supported modes are linear, log, power, sqrt, squared, asinh, sinh, and histogram equalization, with min/max and ZScale controls. Frontend changes must also update the testable scale functions where appropriate.
 
